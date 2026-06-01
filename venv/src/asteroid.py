@@ -1,0 +1,68 @@
+import pygame
+from pygame import Vector2
+import math
+from random import uniform, randint
+from enum import Enum
+
+class Asteroid:
+    
+    STEP_SIZE = 22.9183
+    MAX_VEL = 5.5
+    SIZE = Enum('size', ['LARGE', 'MEDIUM', 'SMALL'])
+
+    def __init__(self, window: pygame.Surface, pos: Vector2, size: "Asteroid.SIZE") -> None:
+        self._window_ref = window
+        self._pos = pos
+        self._size = size
+        self._r = self._init_radius(self._size)
+        self._max_diameter = (self._r * 1.15) * 2
+        self._sprite = self._draw_sprite()
+        self._center = Vector2(self._sprite.get_width() // 2, self._sprite.get_height() // 2)
+        self._vel = Vector2(uniform(-self.MAX_VEL, self.MAX_VEL), uniform(-self.MAX_VEL, self.MAX_VEL))
+        self.mask = pygame.mask.from_surface(self._sprite)
+        self.rect = self._sprite.get_rect(center=self._pos)
+
+    
+    @property
+    def pos(self) -> Vector2:
+        return self._pos
+
+
+    def _draw_sprite(self) -> pygame.Surface:
+        variance = self._r * 0.15
+        surf = pygame.Surface((self._max_diameter, self._max_diameter), pygame.SRCALPHA)
+        center = Vector2(surf.get_width() // 2, surf.get_height() // 2)
+        angle = 0
+        points = []
+        while math.radians(angle) < (math.pi * 2):
+            points.append(Vector2(center.x - self._r * math.cos(math.radians(angle)) + uniform(-variance, variance), center.y - self._r * -math.sin(math.radians(angle)) + uniform(-variance, variance)))
+            angle += self.STEP_SIZE
+        pygame.draw.polygon(surf, (255, 255, 255), points, 3)
+        return surf
+    
+    
+    def _init_radius(self, size: "Asteroid.SIZE") -> float:
+        match self._size:
+            case size.LARGE:
+                return uniform(50, 65)
+            case size.MEDIUM:
+                return uniform(30, 45)
+            case size.SMALL:
+                return uniform(15, 25)
+
+
+    def _screen_wrap(self, surface: pygame.Surface, pos: Vector2) -> Vector2:
+        x = pos.x
+        y = pos.y
+        w, h = surface.get_size()
+        return Vector2(x % (w + self._max_diameter / 2), y % (h + self._max_diameter / 2))
+
+
+    def update(self) -> None:
+        self._pos += self._vel
+        self._pos = self._screen_wrap(self._window_ref, self._pos)
+        self.rect = self._sprite.get_rect(center=self._pos)
+
+
+    def display(self) -> None:
+        self._window_ref.blit(self._sprite, self.rect)
