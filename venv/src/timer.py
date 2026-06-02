@@ -20,4 +20,4 @@ class Timer:
                 self._remaining -= 1
             else:
                 self._set = False
-                return self._task(*self._args, *self._kwargs)
+                return self._task(*self._args, **self._kwargs)
