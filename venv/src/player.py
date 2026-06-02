@@ -3,6 +3,7 @@ from pygame import Vector2
 import math
 
 
+
 class Player:
 
     DECEL_RATE = 0.982
@@ -21,6 +22,10 @@ class Player:
         self._angle = 0
         self._heading = math.radians(self._angle) % (2 * math.pi)
         self.mask = pygame.mask.from_surface(self._rotated_sprite)
+    
+
+    def __str__(self):
+        return f"Player obj. pos: {self._pos}, heading: {self._heading}"
     
 
     @property
@@ -59,8 +64,7 @@ class Player:
 
     
     def _screen_wrap(self, surface: pygame.Surface, pos: Vector2) -> Vector2:
-        x = pos.x
-        y = pos.y
+        x, y = pos
         w, h = surface.get_size()
         return Vector2(x % (w + 20), y % (h + 20))
     
