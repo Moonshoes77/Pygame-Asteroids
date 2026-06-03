@@ -1,4 +1,0 @@
--smooth out screen wrap
--add bullet class
--add asteroid class
--figure out collision masks
