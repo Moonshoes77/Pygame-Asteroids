@@ -6,7 +6,7 @@ from random import randint
 from timer import Timer
 from collections.abc import Callable
 
-god_mode = True
+god_mode = False
 
 class Game:
     def __init__(self) -> None:
