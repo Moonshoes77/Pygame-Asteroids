@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 class Timer:
     def __init__(self, function: Callable, seconds: int, *args, **kwargs):
-        self._remaining = seconds * 60
+        self._remaining = seconds * 60  ### I could track actual time, but a frame count works well enough
         self._task = function
         self._args = args
         self._kwargs = kwargs
