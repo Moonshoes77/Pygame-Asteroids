@@ -1,8 +1,8 @@
 from collections.abc import Callable
 
 class Timer:
-    def __init__(self, function: Callable, seconds: int, *args, **kwargs):
-        self._remaining = seconds * 60  ### I could track actual time, but a frame count works well enough
+    def __init__(self, function: Callable, seconds: int, tick_rate: int, *args, **kwargs):
+        self._remaining = seconds * tick_rate  ### I could track actual time, but a frame count works well enough
         self._task = function
         self._args = args
         self._kwargs = kwargs
@@ -16,7 +16,7 @@ class Timer:
 
     def tick(self):
         if self._set:
-            if self._remaining > 0:
+            if self._remaining > 1:
                 self._remaining -= 1
             else:
                 self._set = False

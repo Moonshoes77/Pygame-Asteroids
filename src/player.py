@@ -8,7 +8,7 @@ class Player:
     DECEL_RATE = 0.982
     MAX_VELOCITY = 5.6
 
-    def __init__(self, window: pygame.Surface) -> None:
+    def __init__(self, window: pygame.Surface, projectile_list: list) -> None:
         self.COLOR = tuple([255, 255, 255])
         self._pos = Vector2(window.get_width() // 2, window.get_height() // 2)
         self._sprite = self._draw_sprite()
@@ -21,8 +21,8 @@ class Player:
         self._angle = 0
         self._heading = math.radians(self._angle) % (2 * math.pi)
         self._mask = pygame.mask.from_surface(self._rotated_sprite)
-        self._bullets = []
         self._timers = []
+        self._projectile_list = projectile_list
 
     def __str__(self):
         return f"Player obj., pos: {self._pos}, heading: {self._heading}"
@@ -40,9 +40,6 @@ class Player:
     def heading(self) -> float:
         return self._heading
 
-    @property
-    def bullets(self):
-        return self._bullets
 
     @property
     def sprite(self) -> pygame.Surface:
@@ -88,7 +85,7 @@ class Player:
 
 
     def _shoot(self):
-        self._bullets.append(Bullet(self))
+        self._projectile_list.append(Bullet(self, self._window_ref))
     
     def _screen_wrap(self, surface: pygame.Surface, pos: Vector2) -> Vector2:
         x, y = pos
@@ -113,30 +110,55 @@ class Player:
 
     def display(self) -> None:
         self._window_ref.blit(self._rotated_sprite, self._rect)
-        for bullet in self._bullets:
-            bullet.update()
-            bullet.display(self._window_ref)
 
 
 class Bullet:
 
     BULLET_SPEED = 7
+    LIFESPAN = 90
 
-    def __init__(self, parent: Player) -> None:
+    def __init__(self, parent: Player, window: pygame.Surface) -> None:
         self._vel = Vector2(self.BULLET_SPEED * math.cos(parent.heading), self.BULLET_SPEED * (-math.sin(parent.heading))) + parent.vel
         self._pos = parent.pos.copy()
         self._sprite = self._draw_sprite()
+        self._rect = self._sprite.get_rect(center=self._pos)
+        self._window_ref = window
+        self._mask: pygame.Mask = self._make_mask(self._sprite)
+        self._counter = 0
+        self.alive = True
 
 
     def _draw_sprite(self) -> pygame.Surface:
-        sprite = pygame.Surface((5, 5), pygame.SRCALPHA)
+        sprite = pygame.Surface((6, 6), pygame.SRCALPHA)
         pygame.draw.circle(sprite, (255, 255, 255), sprite.get_rect().center, 2)
-        pygame.transform.scale(sprite, (3, 0))
+        # sprite = pygame.transform.scale(sprite, (3, 1))
         return sprite
     
+    def _make_mask(self, sprite: pygame.Surface):
+        ### make the whole surface a filled mask to reduce bullets traveling through asteroids ###
+        mask = pygame.Mask(sprite.get_size())
+        mask.fill()
+        return mask
+    
+
+    def _screen_wrap(self, surface: pygame.Surface, pos: Vector2) -> Vector2:
+        x, y = pos
+        w, h = surface.get_size()
+        return Vector2(x % (w + 20), y % (h + 20))
+
+
+    def collide(self, asteroid) -> tuple | None:
+        offset = (asteroid.rect.x - self._rect.x, asteroid.rect.y - self._rect.y)
+        return self._mask.overlap(asteroid.mask, offset) 
 
     def update(self) -> None:
-        self._pos += self._vel
+        if self.alive:
+            self._pos += self._vel
+            self._pos = self._screen_wrap(self._window_ref, self._pos)
+            self._rect = self._sprite.get_rect(center=self._pos)
+            self._counter += 1
+        if self._counter == self.LIFESPAN:
+            self.alive = False
 
 
     def display(self, window: pygame.Surface) -> None:

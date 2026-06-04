@@ -6,23 +6,29 @@ from random import randint
 from timer import Timer
 from collections.abc import Callable
 
-god_mode = False
 
 class Game:
+
+    TICK_RATE = 60
+
     def __init__(self) -> None:
         pygame.init()
         pygame.display.set_caption("Roids")
         self._window = pygame.display.set_mode((1024, 768))
         self._clock = pygame.time.Clock()
-        self._lives = [Player(self._window) for i in range(3)]
-        self._player = self._lives[0]
+        self._I_FRAMES = False
+        self._counter = 0
         self._level = 1
-        self._roids = []
         self._game_over = False
-        self._populate_roids(self._level)
+        self._roids = []
         self._timers = []
         self._events = []
+        self._bullets = []
+        self._lives = [Player(self._window, self._bullets) for i in range(3)]
+        self._player = self._lives[0]
+        self._populate_roids(self._level)
         pygame.display.set_icon(self._player.mask.to_surface(pygame.Surface((32, 32))))
+        
 
     def _populate_roids(self, current_level: int):
         for i in range(0, current_level + 1):
@@ -38,26 +44,54 @@ class Game:
         else:
             self._player = self._lives[0]    
 
+
     def _handle_events(self) -> None:
         self._events = [event for event in pygame.event.get()]
-        
         for event in self._events:
             if event.type == pygame.QUIT:
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     quit()
+                if event.key == pygame.K_g:
+                    self._I_FRAMES = not self._I_FRAMES
+                if event.key == pygame.K_p:
+                    print(self._bullets)
+    
+
+    def _check_collisions(self) -> None:
+        for asteroid in self._roids:
+            if not self._I_FRAMES:
+                if self._player.collide(asteroid):
+                    self._kill_player()
+            for bullet in self._bullets:
+                if bullet.collide(asteroid):
+                    asteroid.take_damage()
+                    bullet.alive = False
 
 
-    def _update_entities(self):
+    def _update_entities(self) -> None:
         self._player.update(self._events)
-        self._player.display()
+        if self._I_FRAMES:
+            if self._counter % 20 > 10:
+                self._player.display()
+        else:    
+            self._player.display()
+
         for asteroid in self._roids:
             asteroid.update()
             asteroid.display()
-            if self._player.collide(asteroid):
-                if not god_mode:
-                    self._kill_player()
+        
+        for bullet in self._bullets:
+            bullet.update()
+            if bullet.alive:
+                bullet.display(self._window)
+
+        self._bullets[:] = [bullet for bullet in self._bullets if bullet.alive]
+        
+        self._counter += 1
+        if self._counter > 1000:
+            self._counter = 0
 
     
     def _update_timers(self):
@@ -76,8 +110,9 @@ class Game:
         while not self._game_over:
             self._window.fill(0)
             self._handle_events()
-            self._update_entities()            
+            self._update_entities()
+            self._check_collisions()           
             self._update_timers()
             pygame.display.flip()
-            self._clock.tick(60)
             pygame.display.set_caption(f"Roids | {self._clock.get_fps()} fps")
+            self._clock.tick(self.TICK_RATE)
