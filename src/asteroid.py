@@ -14,17 +14,27 @@ class Asteroid:
         self._window_ref = window
         self._pos = pos
         self._size = size
+        self._value = self._set_value() 
         self._r = self._init_radius(self._size)
         self._max_diameter = (self._r * 1.15) * 2
         self._sprite, self.mask = self._make_sprite()
         self._center = Vector2(self._sprite.get_width() // 2, self._sprite.get_height() // 2)
         self._vel = Vector2(uniform(-self.MAX_VEL, self.MAX_VEL), uniform(-self.MAX_VEL, self.MAX_VEL))
         self.rect = self._sprite.get_rect(center=self._pos)
-
+        self.is_alive = True
     
     @property
     def pos(self) -> Vector2:
         return self._pos
+
+
+    def _set_value(self) -> int:
+        if self._size == Asteroid.SIZE.LARGE:
+            return 200
+        if self._size == Asteroid.SIZE.MEDIUM:
+            return 400
+        if self._size == Asteroid.SIZE.SMALL:
+            return 800
 
 
     def _make_sprite(self) -> tuple:
@@ -63,9 +73,21 @@ class Asteroid:
         return Vector2(x % (w + self._max_diameter / 2), y % (h + self._max_diameter / 2))
 
 
-    def take_damage(self):
-        pass
+    def take_damage(self, asteroids_list: list) -> None:
 
+        if self._size == Asteroid.SIZE.SMALL:
+            pass
+        elif self._size == Asteroid.SIZE.LARGE:
+            for i in range(2):
+                asteroids_list.append(Asteroid(self._window_ref, self.pos, Asteroid.SIZE.MEDIUM))
+        elif self._size == Asteroid.SIZE.MEDIUM:
+            for i in range(2):
+                asteroids_list.append(Asteroid(self._window_ref, self.pos, Asteroid.SIZE.SMALL))
+
+    
+    def award_points(self) -> int:
+        return self._value
+    
 
     def update(self) -> None:
         self._pos += self._vel

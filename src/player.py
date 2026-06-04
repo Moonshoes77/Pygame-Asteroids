@@ -1,7 +1,6 @@
 import pygame
 from pygame import Vector2
 import math
-from timer import Timer
 
 class Player:
 
@@ -18,10 +17,9 @@ class Player:
         self._turn_speed = 2
         self._accel = 0.25
         self._vel = Vector2(0, 0)
-        self._angle = 0
+        self._angle = 90
         self._heading = math.radians(self._angle) % (2 * math.pi)
         self._mask = pygame.mask.from_surface(self._rotated_sprite)
-        self._timers = []
         self._projectile_list = projectile_list
 
     def __str__(self):
@@ -115,7 +113,7 @@ class Player:
 class Bullet:
 
     BULLET_SPEED = 7
-    LIFESPAN = 90
+    LIFESPAN = 85
 
     def __init__(self, parent: Player, window: pygame.Surface) -> None:
         self._vel = Vector2(self.BULLET_SPEED * math.cos(parent.heading), self.BULLET_SPEED * (-math.sin(parent.heading))) + parent.vel
@@ -125,7 +123,7 @@ class Bullet:
         self._window_ref = window
         self._mask: pygame.Mask = self._make_mask(self._sprite)
         self._counter = 0
-        self.alive = True
+        self.is_alive = True
 
 
     def _draw_sprite(self) -> pygame.Surface:
@@ -152,13 +150,13 @@ class Bullet:
         return self._mask.overlap(asteroid.mask, offset) 
 
     def update(self) -> None:
-        if self.alive:
+        if self.is_alive:
             self._pos += self._vel
             self._pos = self._screen_wrap(self._window_ref, self._pos)
             self._rect = self._sprite.get_rect(center=self._pos)
             self._counter += 1
         if self._counter == self.LIFESPAN:
-            self.alive = False
+            self.is_alive = False
 
 
     def display(self, window: pygame.Surface) -> None:

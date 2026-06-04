@@ -6,7 +6,6 @@ class Timer:
         self._task = function
         self._args = args
         self._kwargs = kwargs
-        self._set = True
 
 
     @property
@@ -15,9 +14,7 @@ class Timer:
     
 
     def tick(self):
-        if self._set:
-            if self._remaining > 1:
-                self._remaining -= 1
-            else:
-                self._set = False
-                return self._task(*self._args, **self._kwargs)
+        if self._remaining > 0:
+            self._remaining -= 1
+        if self._remaining == 0:
+            return self._task(*self._args, **self._kwargs)
