@@ -2,23 +2,30 @@ import pygame
 from pygame import Vector2
 from player import Player
 from asteroid import Asteroid
+from user_interface import *
 from random import randint
 from timer import Timer
 from collections.abc import Callable
+from enum import Enum
 import webbrowser
+
 
 class Game:
 
     TICK_RATE = 60
+    SCENE = Enum('scene', ["MAIN_MENU", "GAME", "GAME_OVER"])
+    STATE = Enum('state', ["PLAYING", "LEVEL_TRANSITION"])
 
     def __init__(self) -> None:
         pygame.init()
         pygame.display.set_caption("Roids")
-        self._window = pygame.display.set_mode((1024, 768))
+        self._window = pygame.display.set_mode((1366, 768), flags=pygame.SCALED , vsync=1)
         self._clock = pygame.time.Clock()
         self._counter = 0
         self._score = 0
         self._level = 1
+        self._level_clear = False
+        self._level_transition = False
         self._new_game = False
         self._I_FRAMES = False
         self._game_over = False
@@ -30,15 +37,21 @@ class Game:
         self._lives = [Player(self._window, self._bullets) for i in range(3)]
         self._player: Player | None = None
         self._add_timer(self._spawn_player, 4)
-        self._populate_roids(self._level)
+        self._populate_asteroids(self._level)
         pygame.display.set_icon(self._lives[0].mask.to_surface(pygame.Surface((32, 32))))
+        self.card = TitleCard(self._window, "Asteroids, Baby!", TitleCard.SIZE.LARGE, (Vector2(self._window.get_rect().center)))
+        self.card.toggle_display()
         
 
-    def _populate_roids(self, current_level: int) -> None:
+    def _populate_asteroids(self, current_level: int) -> None:
         for i in range(0, current_level + 1):
             pos_x = randint(0, self._window.get_width())
             pos_y = randint(0, self._window.get_height())
             self._asteroids.append(Asteroid(self._window, Vector2(pos_x, pos_y), Asteroid.SIZE.LARGE))
+        self._level_clear = False
+        self._level_transition = False
+        self._toggle_i_frames()
+        self._add_timer(self._toggle_i_frames, 4)
 
 
     def _kill_player(self) -> None:
@@ -53,6 +66,16 @@ class Game:
 
     def _toggle_i_frames(self):
         self._I_FRAMES = not self._I_FRAMES
+
+
+    def _check_level_clear(self) -> None:
+        if not self._level_transition:
+            if len(self._asteroids) == 0:
+                self._level_clear = True
+                self._level_transition = True
+                if self._level_clear:
+                    self._level += 1
+                    self._add_timer(self._populate_asteroids, 4, self._level)
 
 
     def _spawn_player(self) -> None:
@@ -88,17 +111,17 @@ class Game:
                 if self._player.collide(asteroid):
                     self._kill_player()
                     asteroid.take_damage(self._asteroids)
-                    self._asteroids.remove(asteroid)
+                    asteroid.is_alive = False
             for bullet in self._bullets:
                 if bullet.collide(asteroid):
                     bullet.is_alive = False
                     asteroid.take_damage(self._asteroids)
-                    self._asteroids.remove(asteroid)
+                    asteroid.is_alive = False
                     self._score += asteroid.award_points()
 
 
     def _update_entities(self) -> None:
-        if not self._player_is_dead:
+        if not self._player == None:
             self._player.update(self._events)
             if self._I_FRAMES:
                 if self._counter % 20 > 10:
@@ -145,6 +168,9 @@ class Game:
                 self._check_collisions()           
                 self._update_timers()
                 self._cleanup()
+                self._check_level_clear()
+                self.card.display()
+                
             else:
                 self._window.fill(0)
                 self._handle_events()

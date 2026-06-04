@@ -38,6 +38,9 @@ class Player:
     def heading(self) -> float:
         return self._heading
 
+    @property
+    def rect(self):
+        return self._rect
 
     @property
     def sprite(self) -> pygame.Surface:
