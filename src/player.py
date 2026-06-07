@@ -1,11 +1,13 @@
 import pygame
 from pygame import Vector2
 import math
+from enum import Enum
 
 class Player:
 
     DECEL_RATE = 0.982
     MAX_VELOCITY = 5.6
+    STATE = Enum("state", ["VULNERABLE", "INVULNERABLE"])
 
     def __init__(self, window: pygame.Surface, projectile_list: list) -> None:
         self.COLOR = tuple([255, 255, 255])
@@ -18,13 +20,20 @@ class Player:
         self._accel = 0.25
         self._vel = Vector2(0, 0)
         self._angle = 90
+        self._counter = 0
         self._heading = math.radians(self._angle) % (2 * math.pi)
         self._mask = pygame.mask.from_surface(self._rotated_sprite)
         self._projectile_list = projectile_list
+        self._state = self.STATE.VULNERABLE
 
+    
     def __str__(self):
         return f"Player obj., pos: {self._pos}, heading: {self._heading}"
     
+
+    @property
+    def state(self) -> STATE:
+        return self._state
 
     @property
     def pos(self) -> Vector2:
@@ -99,6 +108,14 @@ class Player:
         return self._mask.overlap(asteroid.mask, offset)        
 
 
+    def set_invulnerable(self) -> None:
+        self._state = self.STATE.INVULNERABLE
+
+    
+    def set_vulnerable(self) -> None:
+        self._state = self.STATE.VULNERABLE
+
+
     def update(self, event_list: list) -> None:
         self._get_inputs(event_list)
         self._pos += self._vel
@@ -107,11 +124,18 @@ class Player:
         self._rotated_sprite = pygame.transform.rotate(self._sprite, math.degrees(self._heading - (math.pi / 2)))
         self._rect = self._rotated_sprite.get_rect(center=self._pos)
         self._mask = pygame.mask.from_surface(self._rotated_sprite)
-
+        self._counter += 1
+        if self._counter > 1000:
+            self._counter = 0
 
     def display(self) -> None:
-        self._window_ref.blit(self._rotated_sprite, self._rect)
+        if self._state == self.STATE.VULNERABLE:
+            self._window_ref.blit(self._rotated_sprite, self._rect)
+        elif self._state == self.STATE.INVULNERABLE:
+            if self._counter & 20 > 10:
+                self._window_ref.blit(self._rotated_sprite, self.rect)
 
+                
 
 class Bullet:
 
@@ -146,7 +170,7 @@ class Bullet:
         x, y = pos
         w, h = surface.get_size()
         return Vector2(x % (w + 20), y % (h + 20))
-
+    
 
     def collide(self, asteroid) -> tuple | None:
         offset = (asteroid.rect.x - self._rect.x, asteroid.rect.y - self._rect.y)

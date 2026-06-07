@@ -30,11 +30,12 @@ class Asteroid:
 
     def _set_value(self) -> int:
         if self._size == Asteroid.SIZE.LARGE:
-            return 200
+            value = 200
         if self._size == Asteroid.SIZE.MEDIUM:
-            return 400
+            value = 400
         if self._size == Asteroid.SIZE.SMALL:
-            return 800
+            value = 800
+        return value
 
 
     def _make_sprite(self) -> tuple:
