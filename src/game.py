@@ -20,8 +20,8 @@ class Game:
         pygame.display.set_caption("Roids")
         self._window = pygame.display.set_mode((1366, 768))
         self._clock = pygame.time.Clock()
-        self._scene = self.SCENE.GAME
-        self._state = self.STATE.NEW_GAME
+        self._scene = self.SCENE.MAIN_MENU
+        self._state = self.STATE.WAIT
         self._score = 0
         self._level = 1
         self._asteroids = []
@@ -30,10 +30,31 @@ class Game:
         self._bullets = []
         self._lives = [Player(self._window, self._bullets) for i in range(3)]
         self._player: Player | None = None
+        self._menu = MainMenu(self._window, self)
+        self._game_over_card = TitleCard(self._window, "GAME OVER", TitleCard.SIZE.LARGE, Vector2(self._window.get_rect().center))
+        self._new_game_card = TitleCard(self._window, "'F2' for new game or 'q' to quit", TitleCard.SIZE.SMALL, 
+                                        Vector2(self._window.get_rect().center[0], self._window.get_rect().center[1] + 60))
         pygame.display.set_icon(self._lives[0].mask.to_surface(pygame.Surface((32, 32))))
+   
+    @property
+    def events(self):
+        return self._events
 
-        
+    @property
+    def scene(self):
+        return self.scene
+    
+    @scene.setter
+    def scene(self, scene: "Game.SCENE"):
+        self._scene = scene
 
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state: "Game.STATE"):
+        self._state = state
 
     def _populate_asteroids(self, current_level: int) -> None:
         for i in range(0, current_level + 1):
@@ -110,11 +131,14 @@ class Game:
                         elif self._player.state == Player.STATE.VULNERABLE:
                             self._player.set_invulnerable()
 
-                if event.key == pygame.K_F2 and self._state == self.STATE.GAME_OVER:
+                if event.key == pygame.K_F2:
                     self._state = self.STATE.NEW_GAME
+                if event.key == pygame.K_F3:
+                    self._scene = self.SCENE.GAME
                 if event.key == pygame.K_p:
                     print(self._bullets)
                     print(self._asteroids)
+
                     
                 
     
@@ -198,7 +222,8 @@ class Game:
             case self.STATE.LEVEL_TRANSITION:
                 self._level_transition()
             case self.STATE.GAME_OVER:
-                pass
+                self._game_over_card.display()
+                self._new_game_card.display()
             case self.STATE.WAIT:
                 pass
 
@@ -209,108 +234,105 @@ class Game:
         while True:
             match self._scene:
                 case self.SCENE.MAIN_MENU:
-                    pass                
+                    self._update()
+                    self._menu.display()
                 case self.SCENE.GAME:
                     self._update()
 
             self._advance_frame() 
                 
 
+class Button:
+
+    pygame.font.init()
+    FONT = pygame.font.SysFont("Arial", 18)
+    STATE = Enum("state", ["WAITING", "CLICKED"])
+
+    def __init__(self, window: pygame.Surface,  pos: Vector2, width: int, height: int, function: Callable | None, text: str | None = None):
+        self._pos = pos
+        self.rect = pygame.Rect(self._pos, (width, height))
+        self._text = text
+        self._window_ref = window
+        self._function = function
+        self._state = self.STATE.WAITING
 
 
-# class Button:
-
-#     pygame.font.init()
-#     FONT = pygame.font.SysFont("Arial", 24)
-#     STATE = Enum("state", ["WAITING", "CLICKED"])
-
-#     def __init__(self, window: pygame.Surface,  pos: Vector2, width: int, height: int, function: Callable | None, text: str | None = None):
-#         self._pos = pos
-#         self.rect = pygame.Rect(self._pos, (width, height))
-#         self._text = text
-#         self._window_ref = window
-#         self._function = function
-#         self._state = self.STATE.WAITING
+    def display(self):
+        surf = pygame.Surface(self.rect.size)
+        text = self.FONT.render(self._text, True, (255, 255, 255))
+        surf.fill((127, 127, 127))
+        surf.blit(text, ((surf.get_width() // 2) - (text.get_width() // 2), (surf.get_height() // 2) - (text.get_height() // 2)))
+        self._window_ref.blit(surf, self._pos)
 
 
-#     def display(self):
-#         surf = pygame.Surface(self.rect.size)
-#         text = self.FONT.render(self._text, True, (255, 255, 255))
-#         surf.fill((127, 127, 127))
-#         surf.blit(text, ((surf.get_width() // 2) - (text.get_width() // 2), (surf.get_height() // 2) - (text.get_height() // 2)))
-#         self._window_ref.blit(surf, self._pos)
+    def check_clicked(self, events: list):
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.rect.collidepoint(event.pos):
+                    self._state = self.STATE.CLICKED
+                    self.on_click()
+                    self._state = self.STATE.WAITING
 
 
-#     def check_clicked(self):
-#         for event in pygame.event.get():
-#             if event.type == pygame.MOUSEBUTTONUP:
-#                 pos = pygame.mouse.get_pos()
-#                 if self.rect.collidepoint(pos):
-#                     self._state = self.STATE.CLICKED
-#                     self.on_click()
-#                     self._state = self.STATE.WAITING
-
-
-#     def on_click(self):
-#         if self._function is not None and self._state == self.STATE.CLICKED:
-#             return self._function()
+    def on_click(self):
+        if self._function is not None and self._state == self.STATE.CLICKED:
+            return self._function()
 
 
 
-# class TitleCard:
+class TitleCard:
 
-#     SIZE = Enum('size', [("MEDIUM", 72), ("LARGE", 100)])
-#     COLOR = (255, 255, 255)
+    SIZE = Enum('size', [("MEDIUM", 72), ("LARGE", 100), ("SMALL", 40)])
+    COLOR = (255, 255, 255)
 
-#     def __init__(self, window: pygame.Surface, text: str, size: "TitleCard.SIZE", pos: Vector2) -> None:
-#         self._font = pygame.font.SysFont("Arial", size.value)
-#         self._text_render = self._font.render(text, True, self.COLOR)
-#         self._pos = pos
-#         self._window_ref = window
-#         self._is_displaying = True
+    def __init__(self, window: pygame.Surface, text: str, size: "TitleCard.SIZE", pos: Vector2) -> None:
+        self._font = pygame.font.SysFont("Arial", size.value)
+        self._text_render = self._font.render(text, True, self.COLOR)
+        self._pos = pos
+        self._window_ref = window
+        self._is_displaying = True
 
     
-#     def toggle_display(self) -> None:
-#         self._is_displaying = not self._is_displaying
+    def toggle_display(self) -> None:
+        self._is_displaying = not self._is_displaying
 
     
-#     def display(self) -> None:
-#         if self._is_displaying:
-#             self._window_ref.blit(self._text_render, ((self._pos.x) - (self._text_render.get_width() // 2), 
-#                                                       (self._pos.y) - (self._text_render.get_height() // 2)))
+    def display(self) -> None:
+        if self._is_displaying:
+            self._window_ref.blit(self._text_render, ((self._pos.x) - (self._text_render.get_width() // 2), 
+                                                      (self._pos.y) - (self._text_render.get_height() // 2)))
             
 
 
-# class MainMenu:
+class MainMenu:
 
-#     STATE = Enum("state", ["BUTTON_CLICKED", "WAITING"])
+    STATE = Enum("state", ["BUTTON_CLICKED", "WAITING"])
 
-#     def __init__(self, window: pygame.Surface, parent: Game) -> None:
-#         self._title_card = TitleCard(window, "Roids!", TitleCard.SIZE.LARGE, Vector2(window.get_rect().center))
-#         self._window_ref = window
-#         self._parent = parent
-#         self._w_width = window.get_width()
-#         self._w_height = window.get_height()
-#         self._github_button = Button(window, Vector2(self._w_width - 100,
-#                                                      self._w_height - 150), 
-#                                                      100, 150, self._open_github, "See the full project on github!")
-#         self._play_button = Button(window, Vector2(self._w_width - (self._w_width / 4), 
-#                                                    self._w_height - (self._w_height / 3)),
-#                                                    100, 150, self._start_game, "Play")
-#         self._buttons = [self._github_button, self._play_button]
+    def __init__(self, window: pygame.Surface, parent: Game) -> None:
+        self._title_card = TitleCard(window, "Roids!", TitleCard.SIZE.LARGE, Vector2(window.get_rect().center))
+        self._window_ref = window
+        self._parent = parent
+        self._w_width = window.get_width()
+        self._w_height = window.get_height()
+        self._github_button = Button(window, Vector2((self._w_width // 2) - 250, self._w_height - 300), 
+                                                     175, 100, self._open_github, "See on github!")
+        self._play_button = Button(window, Vector2((self._w_width // 2) + 50, self._w_height - 300),
+                                                   175, 100, self._start_game, "Play")
+        self._buttons = [self._github_button, self._play_button]
 
 
-#     def _open_github(self):
-#         url = "https://github.com/Moonshoes77/Pygame-Asteroids"
-#         webbrowser.open(url, new=0, autoraise=True)
+    def _open_github(self):
+        url = "https://github.com/Moonshoes77/Pygame-Asteroids"
+        webbrowser.open(url, new=0, autoraise=True)
 
 
-#     def _start_game(self):
-#         self._parent.scene = self._parent.SCENE.GAME
-#         self._parent.state = self._parent.STATE.NEW_GAME
+    def _start_game(self):
+        self._parent.scene = self._parent.SCENE.GAME
+        self._parent.state = self._parent.STATE.NEW_GAME
 
 
-#     def display(self):
-#         for button in self._buttons:
-#             button.display()
-#             button.check_clicked()
+    def display(self):
+        self._title_card.display()
+        for button in self._buttons:
+            button.display()
+            button.check_clicked(self._parent.events)
