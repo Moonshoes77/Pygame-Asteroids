@@ -31,11 +31,13 @@ class Game:
         self._lives = [Player(self._window, self._bullets) for i in range(3)]
         self._player: Player | None = None
         self._menu = MainMenu(self._window, self)
+        self._scoreboard = TitleCard(self._window, f"Score: {self._score: 10} {" ":10} Lives: {len(self._lives)}", TitleCard.SIZE.SMALL, (Vector2(self._window.get_width() - (self._window.get_width() / 4), 30)))
         self._game_over_card = TitleCard(self._window, "GAME OVER", TitleCard.SIZE.LARGE, Vector2(self._window.get_rect().center))
         self._new_game_card = TitleCard(self._window, "'F2' for new game or 'q' to quit", TitleCard.SIZE.SMALL, 
                                         Vector2(self._window.get_rect().center[0], self._window.get_rect().center[1] + 60))
         pygame.display.set_icon(self._lives[0].mask.to_surface(pygame.Surface((32, 32))))
    
+
     @property
     def events(self):
         return self._events
@@ -139,9 +141,7 @@ class Game:
                     print(self._bullets)
                     print(self._asteroids)
 
-                    
-                
-    
+                     
     def _check_collisions(self) -> None:
         for asteroid in self._asteroids:
             if (self._state == self.STATE.PLAYING 
@@ -193,7 +193,7 @@ class Game:
 
     def _advance_frame(self) -> None:
         pygame.display.flip()
-        pygame.display.set_caption(f"Roids | {self._clock.get_fps()} fps | score: {self._score} | State: {self._state} | Scene: {self._scene}")
+        # pygame.display.set_caption(f"Roids | {self._clock.get_fps()} fps | score: {self._score} | State: {self._state} | Scene: {self._scene}")
         self._clock.tick_busy_loop(self.TICK_RATE)
 
 
@@ -226,7 +226,7 @@ class Game:
                 self._new_game_card.display()
             case self.STATE.WAIT:
                 pass
-
+        self._scoreboard.update(f"Score: {self._score: 10} {" ":10} Lives: {len(self._lives)}")
         self._cleanup()
 
 
@@ -238,6 +238,7 @@ class Game:
                     self._menu.display()
                 case self.SCENE.GAME:
                     self._update()
+                    self._scoreboard.display()
 
             self._advance_frame() 
                 
@@ -287,20 +288,20 @@ class TitleCard:
 
     def __init__(self, window: pygame.Surface, text: str, size: "TitleCard.SIZE", pos: Vector2) -> None:
         self._font = pygame.font.SysFont("Arial", size.value)
-        self._text_render = self._font.render(text, True, self.COLOR)
+        self._text = text
+        self._text_render = self._font.render(self._text, True, self.COLOR)
         self._pos = pos
         self._window_ref = window
-        self._is_displaying = True
 
-    
-    def toggle_display(self) -> None:
-        self._is_displaying = not self._is_displaying
 
-    
+    def update(self, text: str) -> None:
+        self._text = text
+        self._text_render = self._font.render(self._text, True, self.COLOR)
+
+
     def display(self) -> None:
-        if self._is_displaying:
-            self._window_ref.blit(self._text_render, ((self._pos.x) - (self._text_render.get_width() // 2), 
-                                                      (self._pos.y) - (self._text_render.get_height() // 2)))
+        self._window_ref.blit(self._text_render, ((self._pos.x) - (self._text_render.get_width() // 2), 
+                                                 (self._pos.y) - (self._text_render.get_height() // 2)))
             
 
 
@@ -321,17 +322,17 @@ class MainMenu:
         self._buttons = [self._github_button, self._play_button]
 
 
-    def _open_github(self):
+    def _open_github(self) -> None:
         url = "https://github.com/Moonshoes77/Pygame-Asteroids"
         webbrowser.open(url, new=0, autoraise=True)
 
 
-    def _start_game(self):
+    def _start_game(self) -> None:
         self._parent.scene = self._parent.SCENE.GAME
         self._parent.state = self._parent.STATE.NEW_GAME
 
 
-    def display(self):
+    def display(self) -> None:
         self._title_card.display()
         for button in self._buttons:
             button.display()
