@@ -6,6 +6,7 @@ from random import randint
 from timer import Timer
 from collections.abc import Callable
 from enum import Enum
+from sys import exit
 import webbrowser
 
 
@@ -122,10 +123,10 @@ class Game:
         self._events[:] = [event for event in pygame.event.get()]
         for event in self._events:
             if event.type == pygame.QUIT:
-                quit()
+                exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
-                    quit()
+                    exit()
                 if event.key == pygame.K_g:
                     if self._player is not None:
                         if self._player.state == Player.STATE.INVULNERABLE:
