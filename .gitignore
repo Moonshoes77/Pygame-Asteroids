@@ -1,0 +1,4 @@
+venv/
+src/assets
+src/dist
+src/__pycache__

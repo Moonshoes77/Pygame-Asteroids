@@ -25,7 +25,7 @@ class Player:
         self._mask = pygame.mask.from_surface(self._rotated_sprite)
         self._projectile_list = projectile_list
         self._state = self.STATE.VULNERABLE
-        pygame.image.save(self._mask.to_surface(), "icon.png")
+
         
 
     
