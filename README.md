@@ -1,5 +1,5 @@
-Left/Right arrow keys: turn
-Up arrow key: thrust
-Spacebar: shoot
-F2: New Game
+Left/Right arrow keys: turn <br>
+Up arrow key: thrust <br>
+Spacebar: shoot <br>
+F2: New Game <br>
 Q: quit
